@@ -28,14 +28,14 @@ export const signup = async (req, res) => {
     });
     if (newUser) {
       //Generate JWT token
-      await generateTokenAndSetCookie(newUser._id, res);
-      await newUser.save();
-      res.status(201).json({
-        _id: newUser._id,
-        fullName: newUser.fullName,
-        username: newUser.username,
-        profilePic: newUser.profilePic,
-      });
+      // Promise.all([
+      //   await generateTokenAndSetCookie(newUser._id, res),
+      //   await newUser.save(),
+      // ]);
+      await generateTokenAndSetCookie(newUser._id, res),
+        await newUser.save(),
+        delete newUser.password;
+      res.status(201).json(newUser);
     } else {
       res.status(400).json({ error: "invalid user data" });
     }
@@ -57,18 +57,20 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "invalid username or password" });
     }
     generateTokenAndSetCookie(user._id, res);
-    res.status(201).json({
-      username: user.username,
-      fullname: user.fullName,
-      gender: user.gender,
-    });
+    delete user.password;
+    res.status(201).json(user);
   } catch (error) {
     console.log(`error in login ${error.message}`);
   }
 };
 export const logout = (req, res) => {
   try {
-    res.cookie("token", "", { maxAge: 0 });
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "none",
+      secure: process.env.NODE_ENV !== "development",
+    });
+    // res.cookie("token", "", { maxAge: 0 });
     res.status(201).json({ message: "logged out successfully" });
   } catch (error) {
     console.log(`error in logout ${error.message}`);
